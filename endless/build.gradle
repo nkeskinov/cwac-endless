@@ -3,31 +3,24 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:0.7.+'
+        classpath 'com.android.tools.build:gradle:0.13.+'
         classpath 'com.github.dcendents:android-maven-plugin:1.0'
     }
 }
 
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 apply plugin: 'android-maven'
 
 version '1.2.3'
 group 'com.commonsware.cwac'
 
-repositories {
-    maven {
-        url "https://repo.commonsware.com.s3.amazonaws.com"
-    }
-}
-
 dependencies {
-    compile 'com.commonsware.cwac:adapter:1.0.1'
     compile fileTree(dir: 'libs', include: '*.jar')
 }
 
 android {
-    compileSdkVersion 17
-    buildToolsVersion "18.1.0"
+    compileSdkVersion 20
+    buildToolsVersion '20'
 
     sourceSets {
         main {
@@ -49,7 +42,7 @@ android {
 
 android.libraryVariants.all { variant ->
   def name = variant.buildType.name
-  if (name.equals(com.android.builder.BuilderConstants.DEBUG)) {
+  if (name.equals("com.android.builder.BuilderConstants.DEBUG")) {
     return; // Skip debug builds.
   }
   def task = project.tasks.create "jar${name.capitalize()}", Jar
