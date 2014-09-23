@@ -60,6 +60,7 @@ abstract public class EndlessAdapter extends AdapterWrapper {
   private int pendingResource=-1;
   private boolean isSerialized=false;
   private boolean runInBackground=true;
+  private boolean stackFromBottom=false;
 
   /**
    * Constructor wrapping a supplied ListAdapter
@@ -113,6 +114,21 @@ abstract public class EndlessAdapter extends AdapterWrapper {
     this.pendingResource=pendingResource;
     this.setKeepOnAppending(keepOnAppending);
   }
+
+    /**
+     * Constructor adding a flag if the items should be stacked from the bottom.
+     *
+     * @param context
+     * @param wrapped
+     * @param pendingResource
+     * @param keepOnAppending
+     */
+    public EndlessAdapter(Context context, ListAdapter wrapped,
+                          int pendingResource, boolean keepOnAppending,
+                          boolean stackFromBottom) {
+        this(context, wrapped, pendingResource, keepOnAppending);
+        this.stackFromBottom = stackFromBottom;
+    }
 
   public boolean isSerialized() {
     return(isSerialized);
@@ -181,11 +197,11 @@ abstract public class EndlessAdapter extends AdapterWrapper {
    * "Pending" row when new data is loaded.
    */
   public int getItemViewType(int position) {
-    if (position == getWrappedAdapter().getCount()) {
-      return(IGNORE_ITEM_VIEW_TYPE);
-    }
+      if (((stackFromBottom && position == 0) || (!stackFromBottom && position == getWrappedAdapter().getCount())) && keepOnAppending.get()) {
+          return (IGNORE_ITEM_VIEW_TYPE);
+      }
 
-    return(super.getItemViewType(position));
+    return(super.getItemViewType(stackFromBottom && keepOnAppending.get() ? position - 1 : position));
   }
 
   /**
@@ -200,11 +216,11 @@ abstract public class EndlessAdapter extends AdapterWrapper {
 
   @Override
   public Object getItem(int position) {
-    if (position >= super.getCount()) {
+    if (((stackFromBottom && position == 0) || (!stackFromBottom && position >= super.getCount())) && keepOnAppending.get()) {
       return(null);
     }
 
-    return(super.getItem(position));
+    return(super.getItem(stackFromBottom && keepOnAppending.get() ? position - 1 : position));
   }
 
   @Override
@@ -214,11 +230,11 @@ abstract public class EndlessAdapter extends AdapterWrapper {
 
   @Override
   public boolean isEnabled(int position) {
-    if (position >= super.getCount()) {
+    if (((stackFromBottom && position == 0) || (!stackFromBottom && position >= super.getCount())) && keepOnAppending.get()) {
       return(false);
     }
 
-    return(super.isEnabled(position));
+    return(super.isEnabled(stackFromBottom && keepOnAppending.get() ? position - 1 : position));
   }
 
   /**
@@ -238,7 +254,7 @@ abstract public class EndlessAdapter extends AdapterWrapper {
    */
   @Override
   public View getView(int position, View convertView, ViewGroup parent) {
-    if (position == super.getCount() && keepOnAppending.get()) {
+    if (((stackFromBottom && position == 0) || (!stackFromBottom && position == super.getCount())) && keepOnAppending.get()) {
       if (pendingView == null) {
         pendingView=getPendingView(parent);
 
@@ -258,7 +274,10 @@ abstract public class EndlessAdapter extends AdapterWrapper {
       return(pendingView);
     }
 
-    return(super.getView(position, convertView, parent));
+    return(super.getView(
+            stackFromBottom && keepOnAppending.get() ? position - 1 : position,
+            convertView != pendingView ? convertView : null,
+            parent));
   }
 
   /**
@@ -297,8 +316,12 @@ abstract public class EndlessAdapter extends AdapterWrapper {
   }
   
   private void setKeepOnAppending(boolean newValue) {
+      if (newValue == false) {
+          // if there is nothing to append, the flag does not matter anymore
+          stackFromBottom = false;
+      }
     boolean same=(newValue==keepOnAppending.get());
-    
+
     keepOnAppending.set(newValue);
     
     if (!same) {
