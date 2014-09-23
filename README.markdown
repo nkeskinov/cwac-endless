@@ -1,3 +1,6 @@
+# Fork changes:
+- Allows stacking items from the bottom.
+
 CWAC EndlessAdapter: It Just Keeps Going and Going And...
 =========================================================
 
